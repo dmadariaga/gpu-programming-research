@@ -109,9 +109,9 @@ void writePPMImage(uchar *imageR, uchar *imageG, uchar *imageB, int width, int h
     fprintf(fp, "P6\n%d %d\n%d\n", width, height, 255);
 
     for (int i=0; i<pixelCount; i++){
-    	fwrite((void *)imageR[i], sizeof(uchar), 1, fp);
-    	fwrite((void *)imageG[i], sizeof(uchar), 1, fp);
-    	fwrite((void *)imageB[i], sizeof(uchar), 1, fp);
+    	fwrite(&imageR[i], sizeof(uchar), 1, fp);
+    	fwrite(&imageG[i], sizeof(uchar), 1, fp);
+    	fwrite(&imageB[i], sizeof(uchar), 1, fp);
   	}
 
     fclose(fp);
@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
 		imageG[i] = clusterG[cluster];
 		imageB[i] = clusterB[cluster];
 	}
-	void writePPMImage(imageR, imageG, imageB, width, height, outputFile);
+	writePPMImage(imageR, imageG, imageB, width, height, outputFile);
 	
 	free(imageR);
 	free(imageG);
@@ -241,7 +241,6 @@ int main(int argc, char *argv[]) {
 
 	free(clusterR);
 	free(clusterG);
-	free(clusterB);
 	free(clusterB);
 
 	free(assignedClusters);
