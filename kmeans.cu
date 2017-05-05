@@ -138,8 +138,12 @@ int main(int argc, char *argv[]) {
 	clustersG = (uchar*)calloc(sizeof(uchar), k);
 	clustersB = (uchar*)calloc(sizeof(uchar), k);
 
-	for (int i=0; i<pixelCount; i++)
-		printf("R:%dG:%dB:%d ", imageR[i], imageG[i], imageB[i]);
+	/*initial random centroids*/
+	for (int i=0; i<k; i++){
+		clusterR[i] = rand() % 256;
+		clusterG[i] = rand() % 256;
+		clusterB[i] = rand() % 256;
+	}
 	
 	cudaMalloc(&d_imageR, imageSize);
 	cudaMalloc(&d_imageG, imageSize);	
