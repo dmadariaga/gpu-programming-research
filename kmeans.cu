@@ -49,7 +49,7 @@ __global__ void sumClusters(uchar *d_imageR, uchar *d_imageG, uchar *d_imageB, i
 }
 
 __global__ void clearClusterInfo(int *d_sumR, int *d_sumG, int *d_sumB, int *d_clusterSize){
-	int threadID = threadIdx.x;
+	int threadID = threadIdx.x + threadIdx.y * blockDim.x;
 	if(threadID < d_k) {
 		d_sumR[threadID] = 0;
 		d_sumG[threadID] = 0;
@@ -60,7 +60,7 @@ __global__ void clearClusterInfo(int *d_sumR, int *d_sumG, int *d_sumB, int *d_c
 
 __global__ void calculateCentroids(uchar *d_clusterR, uchar *d_clusterG, uchar *d_clusterB,
 					int *d_sumR, int *d_sumG, int *d_sumB, int *d_clusterSize){
-	int threadID = threadIdx.x;
+	int threadID = threadIdx.x + threadIdx.y * blockDim.x;
 	if(threadID < d_k) {
 		int clusterSize = d_clusterSize[threadID];
 		d_clusterR[threadID] = d_sumR[threadID] / clusterSize;
@@ -220,9 +220,9 @@ int main(int argc, char *argv[]) {
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
 	cudaMemcpy(clusterSize, d_clusterSize, centroidsSize, cudaMemcpyDeviceToHost);
 
-	cudaMemcpy(clusterR, d_clusterR, centroidsSize, cudaMemcpyDeviceToHost);
-	cudaMemcpy(clusterG, d_clusterG, centroidsSize, cudaMemcpyDeviceToHost);
-	cudaMemcpy(clusterB, d_clusterB, centroidsSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(clusterR, d_clusterR, sizeof(uchar)*k, cudaMemcpyDeviceToHost);
+	cudaMemcpy(clusterG, d_clusterG, sizeof(uchar)*k, cudaMemcpyDeviceToHost);
+	cudaMemcpy(clusterB, d_clusterB, sizeof(uchar)*k, cudaMemcpyDeviceToHost);
 	cudaMemcpy(imageR, d_imageR, imageSize, cudaMemcpyDeviceToHost);
 	cudaMemcpy(imageG, d_imageR, imageSize, cudaMemcpyDeviceToHost);
 	cudaMemcpy(imageB, d_imageR, imageSize, cudaMemcpyDeviceToHost);
