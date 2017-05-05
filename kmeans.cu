@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <ctype.h>
+#include <sys/time.h>
 #include <time.h> 
 
 #define BLOCK_SIZE 16
@@ -168,7 +169,6 @@ int main(int argc, char *argv[]) {
 		clusterR[i] = rand() % 256;
 		clusterG[i] = rand() % 256;
 		clusterB[i] = rand() % 256;
-		printf("cluster %d: %d %d %d\n", i, clusterR[i], clusterG[i], clusterB[i]);
 	}
 	
 	cudaMalloc(&d_imageR, imageSize);
@@ -207,7 +207,13 @@ int main(int argc, char *argv[]) {
  	//2D Block
 	//Each dimension is fixed
 	dim3 dimBLOCK(BLOCK_SIZE,BLOCK_SIZE);
-
+	
+	struct timespec stime, etime;
+	double t;
+	if (clock_gettime(CLOCK_THREAD_CPUTIME_ID , &stime)) {
+	    fprintf(stderr, "clock_gettime failed");
+	    exit(-1);
+	}
 	for (int i=0; i<numIter; i++){
 		assignClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
 								d_clusterR, d_clusterG, d_clusterB);
@@ -217,6 +223,14 @@ int main(int argc, char *argv[]) {
 		calculateCentroids<<< 1, dimBLOCK >>> (d_clusterR, d_clusterG, d_clusterB,
 								d_sumR, d_sumG, d_sumB, d_clusterSize);
 	}
+	if (clock_gettime(CLOCK_THREAD_CPUTIME_ID , &etime)) {
+    		fprintf(stderr, "clock_gettime failed");
+   		 exit(-1);
+  	}
+  
+  	t = (etime.tv_sec - stime.tv_sec) + (etime.tv_nsec - stime.tv_nsec) / 1000000000.0;
+  	printf("threads: %d, elapsed time: %lf\n", __cilkrts_get_nworkers(), t);
+
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
 	cudaMemcpy(clusterSize, d_clusterSize, centroidsSize, cudaMemcpyDeviceToHost);
 
@@ -234,9 +248,7 @@ int main(int argc, char *argv[]) {
 		imageG[i] = clusterG[cluster];
 		imageB[i] = clusterB[cluster];
 	}
-        for (int i=0; i<k; i++){
-                printf("cluster %d: %d %d %d\n", i, clusterR[i], clusterG[i], clusterB[i]);
-        }
+
 	writePPMImage(imageR, imageG, imageB, width, height, outputFile);
 	
 	free(imageR);
