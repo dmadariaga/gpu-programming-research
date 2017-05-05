@@ -143,6 +143,7 @@ int main(int argc, char *argv[]) {
 	fclose(fp);
 
 	uchar *imageR, *imageG, *imageB, *clusterR, *clusterG, *clusterB;
+	int *assignedClusters;
 	uchar *d_imageR, *d_imageG, *d_imageB, *d_clusterR, *d_clusterG, *d_clusterB;
 	int *d_assignedClusters, *d_sumR, *d_sumG, *d_sumB, *d_clusterSize;
 
@@ -159,6 +160,7 @@ int main(int argc, char *argv[]) {
 	clusterR = (uchar*)calloc(sizeof(uchar), k);
 	clusterG = (uchar*)calloc(sizeof(uchar), k);
 	clusterB = (uchar*)calloc(sizeof(uchar), k);
+	assignedClusters = (int*)malloc(sizeof(int)*pixelCount);
 
 	/*initial random centroids*/
 	srand (time(NULL));
@@ -223,10 +225,10 @@ int main(int argc, char *argv[]) {
 	cudaMemcpy(imageR, d_imageR, imageSize, cudaMemcpyDeviceToHost);
 	cudaMemcpy(imageG, d_imageR, imageSize, cudaMemcpyDeviceToHost);
 	cudaMemcpy(imageB, d_imageR, imageSize, cudaMemcpyDeviceToHost);
-	cudaMemcpy(assignClusters, d_assignedClusters, sizeof(int)*pixelCount, cudaMemcpyDeviceToHost);
+	cudaMemcpy(assignedClusters, d_assignedClusters, sizeof(int)*pixelCount, cudaMemcpyDeviceToHost);
 
 	for (int i=0; i<pixelCount; i++){
-		int cluster = assignClusters[i];
+		int cluster = assignedClusters[i];
 		imageR[i] = clusterR[cluster];
 		imageG[i] = clusterG[cluster];
 		imageB[i] = clusterB[cluster];
@@ -240,7 +242,9 @@ int main(int argc, char *argv[]) {
 	free(clusterR);
 	free(clusterG);
 	free(clusterB);
+	free(clusterB);
 
+	free(assignedClusters);
 	free(clusterSize);
 
 	cudaFree(d_imageR);
