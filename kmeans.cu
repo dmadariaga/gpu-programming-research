@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <ctype.h>
+#include <time.h> 
 
 #define BLOCK_SIZE 16
 #define GRID_SIZE 256
@@ -18,9 +19,9 @@ __global__ void assignClusters(uchar *d_imageR, uchar *d_imageG, uchar *d_imageB
 		double dist, min = 0;
 		int index;
 		for (int i=0; i<d_k; i++){
-			dist = sqrtf(powf(d_imageR[threadID] - d_clustersR[threadID], 2) +
-					powf(d_imageG[threadID] - d_clustersG[threadID], 2) +
-					powf(d_imageB[threadID] - d_clustersB[threadID], 2) );
+			dist = sqrtf(powf(d_imageR[threadID] - d_clustersR[i], 2) +
+					powf(d_imageG[threadID] - d_clustersG[i], 2) +
+					powf(d_imageB[threadID] - d_clustersB[i], 2) );
 			if (dist < min || i == 0){
 				min = dist;	
 				index = i;
@@ -139,6 +140,7 @@ int main(int argc, char *argv[]) {
 	clustersB = (uchar*)calloc(sizeof(uchar), k);
 
 	/*initial random centroids*/
+	srand (time(NULL));
 	for (int i=0; i<k; i++){
 		clustersR[i] = rand() % 256;
 		clustersG[i] = rand() % 256;
