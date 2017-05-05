@@ -127,9 +127,9 @@ void sumClusters(int pixelCount, int k, uchar *imageR, uchar *imageG, uchar *ima
     
     for(uint j = ll; j < ul; j++) {
       int cluster = assignedClusters[j];
-      tmpR[cluster] = imageR[j];
-      tmpG[cluster] = imageG[j];
-      tmpB[cluster] = imageB[j];
+      tmpR[cluster] += imageR[j];
+      tmpG[cluster] += imageG[j];
+      tmpB[cluster] += imageB[j];
       tmpSize[cluster] += 1;
     }
     for (int j=0; j<k; j++){
@@ -148,8 +148,8 @@ void sumClusters(int pixelCount, int k, uchar *imageR, uchar *imageG, uchar *ima
   for(int i = 0; i < num_threads; i++){
     for (int j=0; j<k; j++){
       sumR[j] += partialR[i*k+j];
-      sumR[j] += partialR[i*k+j];
-      sumR[j] += partialR[i*k+j];
+      sumG[j] += partialG[i*k+j];
+      sumB[j] += partialB[i*k+j];
       clusterSize[j] += partialSize[i*k+j];
     }
   }
