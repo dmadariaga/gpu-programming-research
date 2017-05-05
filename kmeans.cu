@@ -140,9 +140,9 @@ int main(int argc, char *argv[]) {
 
 	/*initial random centroids*/
 	for (int i=0; i<k; i++){
-		clusterR[i] = rand() % 256;
-		clusterG[i] = rand() % 256;
-		clusterB[i] = rand() % 256;
+		clustersR[i] = rand() % 256;
+		clustersG[i] = rand() % 256;
+		clustersB[i] = rand() % 256;
 	}
 	
 	cudaMalloc(&d_imageR, imageSize);
