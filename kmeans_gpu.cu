@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <ctype.h>
+#include <sys/time.h>
 #include <time.h> 
 
 #define BLOCK_SIZE 16
@@ -49,7 +50,7 @@ __global__ void sumClusters(uchar *d_imageR, uchar *d_imageG, uchar *d_imageB, i
 }
 
 __global__ void clearClusterInfo(int *d_sumR, int *d_sumG, int *d_sumB, int *d_clusterSize){
-	int threadID = threadIdx.x;
+	int threadID = threadIdx.x + threadIdx.y * blockDim.x;
 	if(threadID < d_k) {
 		d_sumR[threadID] = 0;
 		d_sumG[threadID] = 0;
@@ -60,12 +61,11 @@ __global__ void clearClusterInfo(int *d_sumR, int *d_sumG, int *d_sumB, int *d_c
 
 __global__ void calculateCentroids(uchar *d_clusterR, uchar *d_clusterG, uchar *d_clusterB,
 					int *d_sumR, int *d_sumG, int *d_sumB, int *d_clusterSize){
-	int threadID = threadIdx.x;
+	int threadID = threadIdx.x + threadIdx.y * blockDim.x;
 	if(threadID < d_k) {
 		int clusterSize = d_clusterSize[threadID];
 		if (clusterSize == 0)
 			clusterSize = 1;
-
 		d_clusterR[threadID] = d_sumR[threadID] / clusterSize;
 		d_clusterG[threadID] = d_sumG[threadID] / clusterSize;
 		d_clusterB[threadID] = d_sumB[threadID] / clusterSize;
@@ -196,7 +196,6 @@ int main(int argc, char *argv[]) {
 	cudaMemcpyToSymbol(d_k, &k, sizeof(int));
 	cudaMemcpyToSymbol(d_pixelCount, &pixelCount, sizeof(int));
 
-
 	int BLOCK_X, BLOCK_Y;
 	BLOCK_X = ceil(width/BLOCK_SIZE);
 	BLOCK_Y = ceil(height/BLOCK_SIZE);
@@ -210,7 +209,13 @@ int main(int argc, char *argv[]) {
  	//2D Block
 	//Each dimension is fixed
 	dim3 dimBLOCK(BLOCK_SIZE,BLOCK_SIZE);
-
+	
+	struct timespec stime, etime;
+	double t;
+	if (clock_gettime(CLOCK_THREAD_CPUTIME_ID , &stime)) {
+	    fprintf(stderr, "clock_gettime failed");
+	    exit(-1);
+	}
 	for (int i=0; i<numIter; i++){
 		assignClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
 								d_clusterR, d_clusterG, d_clusterB);
@@ -220,6 +225,15 @@ int main(int argc, char *argv[]) {
 		calculateCentroids<<< 1, dimBLOCK >>> (d_clusterR, d_clusterG, d_clusterB,
 								d_sumR, d_sumG, d_sumB, d_clusterSize);
 	}
+	if (clock_gettime(CLOCK_THREAD_CPUTIME_ID , &etime)) {
+    		fprintf(stderr, "clock_gettime failed");
+   		 exit(-1);
+  	}
+  
+  	t = (etime.tv_sec - stime.tv_sec) + (etime.tv_nsec - stime.tv_nsec) / 1000000000.0;
+
+  	printf("gpu,%d,%d,%d,%lf\n", gpixelCount, k, numIter, t); //results
+
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
 	cudaMemcpy(clusterSize, d_clusterSize, centroidsSize, cudaMemcpyDeviceToHost);
 
@@ -237,8 +251,7 @@ int main(int argc, char *argv[]) {
 		imageG[i] = clusterG[cluster];
 		imageB[i] = clusterB[cluster];
 	}
-
-    if (argc == 5)
+	if (argc == 5)
 		writePPMImage(imageR, imageG, imageB, width, height, outputFile);
 	
 	free(imageR);
