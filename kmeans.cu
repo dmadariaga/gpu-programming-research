@@ -13,15 +13,15 @@ __constant__ int d_k;
 __constant__ int d_pixelCount;
 
 __global__ void assignClusters(uchar *d_imageR, uchar *d_imageG, uchar *d_imageB, int *d_assignedClusters, 
-				uchar *d_clustersR, uchar *d_clustersG, uchar *d_clustersB){
+				uchar *d_clusterR, uchar *d_clusterG, uchar *d_clusterB){
 	int threadID = (threadIdx.x + blockIdx.x * blockDim.x) + (threadIdx.y + blockIdx.y * blockDim.y) * blockDim.x * gridDim.x;
 	if (threadID < d_pixelCount){
 		double dist, min = 0;
 		int index;
 		for (int i=0; i<d_k; i++){
-			dist = sqrtf(powf(d_imageR[threadID] - d_clustersR[i], 2) +
-					powf(d_imageG[threadID] - d_clustersG[i], 2) +
-					powf(d_imageB[threadID] - d_clustersB[i], 2) );
+			dist = sqrtf(powf(d_imageR[threadID] - d_clusterR[i], 2) +
+					powf(d_imageG[threadID] - d_clusterG[i], 2) +
+					powf(d_imageB[threadID] - d_clusterB[i], 2) );
 			if (dist < min || i == 0){
 				min = dist;	
 				index = i;
@@ -58,46 +58,66 @@ __global__ void clearClusterInfo(int *d_sumR, int *d_sumG, int *d_sumB, int *d_c
 	}
 }
 
-__global__ void calculateCentroids(uchar *d_clustersR, uchar *d_clustersG, uchar *d_clustersB,
+__global__ void calculateCentroids(uchar *d_clusterR, uchar *d_clusterG, uchar *d_clusterB,
 					int *d_sumR, int *d_sumG, int *d_sumB, int *d_clusterSize){
 	int threadID = threadIdx.x;
 	if(threadID < d_k) {
 		int clusterSize = d_clusterSize[threadID];
-		d_clustersR[threadID] = d_sumR[threadID] / clusterSize;
-		d_clustersG[threadID] = d_sumG[threadID] / clusterSize;
-		d_clustersB[threadID] = d_sumB[threadID] / clusterSize;
+		d_clusterR[threadID] = d_sumR[threadID] / clusterSize;
+		d_clusterG[threadID] = d_sumG[threadID] / clusterSize;
+		d_clusterB[threadID] = d_sumB[threadID] / clusterSize;
 	}
 }
 
 void error(char const *message){
-  fprintf(stderr, "Error: %s\n", message);
-  exit(1);
+  	fprintf(stderr, "Error: %s\n", message);
+  	exit(1);
 }
 void readPPMHeader(FILE *fp, int *width, int *height){
-  char ch;
-  int  maxval;
+  	char ch;
+  	int  maxval;
 
-  if (fscanf(fp, "P%c\n", &ch) != 1 || ch != '6')
-    error("file is not in ppm raw format (P6)");
+  	if (fscanf(fp, "P%c\n", &ch) != 1 || ch != '6')
+    	error("file is not in ppm raw format (P6)");
 
-  /* skip comments */
-  ch = getc(fp);
-  while (ch == '#'){
-      do {
-	ch = getc(fp);
-      } while (ch != '\n');	/* read to the end of the line */
-      ch = getc(fp);            
+  	/* skip comments */
+  	ch = getc(fp);
+  	while (ch == '#'){
+    	do {
+			ch = getc(fp);
+      	} while (ch != '\n');	/* read to the end of the line */
+      	ch = getc(fp);            
     }
 
-  if (!isdigit(ch)) error("cannot read header information from ppm file");
+  	if (!isdigit(ch)) error("cannot read header information from ppm file");
 
-  ungetc(ch, fp);		/* put that digit back */
+  	ungetc(ch, fp);		/* put that digit back */
 
-  /* read the width, height, and maximum value for a pixel */
-  fscanf(fp, "%d%d%d\n", width, height, &maxval);
+  	/* read the width, height, and maximum value for a pixel */
+  	fscanf(fp, "%d%d%d\n", width, height, &maxval);
 
-  if (maxval != 255) error("image is not true-color (24 bit); read failed");
+  	if (maxval != 255) error("image is not true-color (24 bit); read failed");
 }
+
+void writePPMImage(uchar *imageR, uchar *imageG, uchar *imageB, int width, int height, char const *filename){
+	int num;
+    int pixelCount = width*height;
+
+    FILE *fp = fopen(filename, "w");
+
+    if (!fp) error("cannot open file for writing");
+
+    fprintf(fp, "P6\n%d %d\n%d\n", width, height, 255);
+
+    num = fwrite((void *) image->data, 1, (size_t) size, fp);
+    for (int i=0; i<pixelCount; i++){
+    	fwrite(imageR[i], sizeof(uchar), 1, fp);
+    	fwrite(imageG[i], sizeof(uchar), 1, fp);
+    	fwrite(imageB[i], sizeof(uchar), 1, fp);
+  	}
+
+    fclose(fp);
+} 
 
 void uploadImage(uchar *image, int size, uchar *imageR, uchar *imageG, uchar *imageB){
 	for (int i=0; i<size; i+=3){
@@ -112,6 +132,7 @@ int main(int argc, char *argv[]) {
 	char* inputFile = argv[1];
 	int k = atoi(argv[2]);
 	int numIter = atoi(argv[3]);
+	char* outputFile = argv[4];
 
 	int width, height;
 
@@ -123,8 +144,8 @@ int main(int argc, char *argv[]) {
 	fread(image, 1, pixelCount*3, fp);
 	fclose(fp);
 
-	uchar *imageR, *imageG, *imageB, *clustersR, *clustersG, *clustersB;
-	uchar *d_imageR, *d_imageG, *d_imageB, *d_clustersR, *d_clustersG, *d_clustersB;
+	uchar *imageR, *imageG, *imageB, *clusterR, *clusterG, *clusterB;
+	uchar *d_imageR, *d_imageG, *d_imageB, *d_clusterR, *d_clusterG, *d_clusterB;
 	int *d_assignedClusters, *d_sumR, *d_sumG, *d_sumB, *d_clusterSize;
 
 	int imageSize = sizeof(uchar)*pixelCount;
@@ -137,25 +158,25 @@ int main(int argc, char *argv[]) {
 	uploadImage(image, pixelCount*3, imageR, imageG, imageB);
 	free(image);
 
-	clustersR = (uchar*)calloc(sizeof(uchar), k);
-	clustersG = (uchar*)calloc(sizeof(uchar), k);
-	clustersB = (uchar*)calloc(sizeof(uchar), k);
+	clusterR = (uchar*)calloc(sizeof(uchar), k);
+	clusterG = (uchar*)calloc(sizeof(uchar), k);
+	clusterB = (uchar*)calloc(sizeof(uchar), k);
 
 	/*initial random centroids*/
 	srand (time(NULL));
 	for (int i=0; i<k; i++){
-		clustersR[i] = rand() % 256;
-		clustersG[i] = rand() % 256;
-		clustersB[i] = rand() % 256;
+		clusterR[i] = rand() % 256;
+		clusterG[i] = rand() % 256;
+		clusterB[i] = rand() % 256;
 	}
 	
 	cudaMalloc(&d_imageR, imageSize);
 	cudaMalloc(&d_imageG, imageSize);	
 	cudaMalloc(&d_imageB, imageSize);
 	cudaMalloc(&d_assignedClusters, sizeof(int)*pixelCount);
-	cudaMalloc(&d_clustersR, sizeof(uchar)*k);
-	cudaMalloc(&d_clustersG, sizeof(uchar)*k);
-	cudaMalloc(&d_clustersB, sizeof(uchar)*k);
+	cudaMalloc(&d_clusterR, sizeof(uchar)*k);
+	cudaMalloc(&d_clusterG, sizeof(uchar)*k);
+	cudaMalloc(&d_clusterB, sizeof(uchar)*k);
 	cudaMalloc(&d_sumR, centroidsSize);
 	cudaMalloc(&d_sumG, centroidsSize);
 	cudaMalloc(&d_sumB, centroidsSize);
@@ -164,9 +185,9 @@ int main(int argc, char *argv[]) {
 	cudaMemcpy(d_imageR, imageR, imageSize, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_imageG, imageG, imageSize, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_imageB, imageB, imageSize, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_clustersR, clustersR, sizeof(uchar)*k, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_clustersG, clustersG, sizeof(uchar)*k, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_clustersB, clustersB, sizeof(uchar)*k, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_clusterR, clusterR, sizeof(uchar)*k, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_clusterG, clusterG, sizeof(uchar)*k, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_clusterB, clusterB, sizeof(uchar)*k, cudaMemcpyHostToDevice);
 
 	cudaMemcpyToSymbol(d_k, &k, sizeof(int));
 	cudaMemcpyToSymbol(d_pixelCount, &pixelCount, sizeof(int));
@@ -188,28 +209,39 @@ int main(int argc, char *argv[]) {
 
 	for (int i=0; i<numIter; i++){
 		assignClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
-								d_clustersR, d_clustersG, d_clustersB);
+								d_clusterR, d_clusterG, d_clusterB);
 		clearClusterInfo<<< 1, k >>> (d_sumR, d_sumG, d_sumB, d_clusterSize);		
 		sumClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
 								d_sumR, d_sumG, d_sumB, d_clusterSize);
-		calculateCentroids<<< 1, k >>> (d_clustersR, d_clustersG, d_clustersB,
+		calculateCentroids<<< 1, k >>> (d_clusterR, d_clusterG, d_clusterB,
 								d_sumR, d_sumG, d_sumB, d_clusterSize);
 	}
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
 	cudaMemcpy(clusterSize, d_clusterSize, centroidsSize, cudaMemcpyDeviceToHost);
 
-	cudaMemcpy(clustersR, d_clustersR, centroidsSize, cudaMemcpyDeviceToHost);
-	for (int i=0; i<k; i++){
-		printf("Cluster %d: %d,  R:%d \n", i, clusterSize[i], clustersR[i]);
+	cudaMemcpy(clusterR, d_clusterR, centroidsSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(clusterG, d_clusterG, centroidsSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(clusterB, d_clusterB, centroidsSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(imageR, d_imageR, imageSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(imageG, d_imageR, imageSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(imageB, d_imageR, imageSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(assignClusters, d_assignedClusters, sizeof(int)*pixelCount, cudaMemcpyDeviceToHost);
+
+	for (int i=0; i<pixelCount; i++){
+		int cluster = assignClusters[i];
+		imageR[i] = clusterR[cluster];
+		imageG[i] = clusterG[cluster];
+		imageB[i] = clusterB[cluster];
 	}
+	void writePPMImage(imageR, imageG, imageB, width, height, outputFile);
 	
 	free(imageR);
 	free(imageG);
 	free(imageB);
 
-	free(clustersR);
-	free(clustersG);
-	free(clustersB);
+	free(clusterR);
+	free(clusterG);
+	free(clusterB);
 
 	free(clusterSize);
 
@@ -217,9 +249,9 @@ int main(int argc, char *argv[]) {
 	cudaFree(d_imageG);	
 	cudaFree(d_imageB);
 	cudaFree(d_assignedClusters);
-	cudaFree(d_clustersR);
-	cudaFree(d_clustersG);
-	cudaFree(d_clustersB);
+	cudaFree(d_clusterR);
+	cudaFree(d_clusterG);
+	cudaFree(d_clusterB);
 	cudaFree(d_sumR);
 	cudaFree(d_sumG);
 	cudaFree(d_sumB);
