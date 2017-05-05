@@ -1,10 +1,11 @@
 #!/bin/bash
+nvcc -o kmeans_gpu kmeans_gpu.cu
 
-echo "size,k,iter,t"
+echo "unit,size,k,iter,t"
 
 repetitions=5
 
-for n in 1600 3200 # iterate over cores
+for n in 1600 3200 # iterate over images
 do
     for (( i=0; i<${repetitions}; i++)) # repetitions
     do
@@ -12,7 +13,7 @@ do
 	do
 	    for numIter in  100 1000 5000 10000 #iterate over numIter
 	    do
-	        ./a.out ${n}.ppm ${k} ${numIter}
+	        ./kmeans_gpu ${n}.ppm ${k} ${numIter}
 	    done
 	done
     done

@@ -1,3 +1,4 @@
+// Compile: nvcc -o kmeans_gpu kmeans_gpu.cu
 #include <math.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -232,7 +233,7 @@ int main(int argc, char *argv[]) {
   
   	t = (etime.tv_sec - stime.tv_sec) + (etime.tv_nsec - stime.tv_nsec) / 1000000000.0;
 
-  	printf("gpu,%d,%d,%d,%lf\n", gpixelCount, k, numIter, t); //results
+  	printf("%d,%d,%d,%lf\n", pixelCount, k, numIter, t); //results
 
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
 	cudaMemcpy(clusterSize, d_clusterSize, centroidsSize, cudaMemcpyDeviceToHost);

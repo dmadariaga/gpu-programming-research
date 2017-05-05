@@ -1,6 +1,7 @@
 #!/bin/bash
+gcc -std=gnu99 -o kmeans_cpu kmeans_cpu.c -fcilkplus -lcilkrts -lm
 
-echo "size,k,iter,t"
+echo "unit,size,k,iter,t"
 
 repetitions=5
 
@@ -12,7 +13,7 @@ do
 	do
 	    for numIter in  100 1000 5000 10000 #iterate over numIter
 	    do
-	        CILK_NWORKERS=4 ./template ${n}.ppm ${k} ${numIter}
+	        CILK_NWORKERS=4 ./kmeans_cpu images/${n}.ppm ${k} ${numIter}
 	    done
 	done
     done

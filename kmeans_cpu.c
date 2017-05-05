@@ -1,4 +1,4 @@
-// Compile: gcc -std=gnu99 -o template template.c -fcilkplus -lcilkrts
+// Compile: gcc -std=gnu99 -o kmeans_cpu kmeans_cpu.c -fcilkplus -lcilkrts -lm
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -263,7 +263,7 @@ int main(int argc, char* argv[]) {
   free(assignedClusters);
   free(clusterSize);
   
-  printf("threads: %d, elapsed time: %lf\n", __cilkrts_get_nworkers(), t);
+  printf("cpu,%d,%d,%d,%lf\n", pixelCount, k, numIter, t);
   
   return EXIT_SUCCESS;
 }
