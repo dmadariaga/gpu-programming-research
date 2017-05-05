@@ -5,7 +5,7 @@ echo "unit,size,k,iter,t"
 
 repetitions=5
 
-for n in 1600 3200 # iterate over cores
+for n in 1600 3200 # iterate over images
 do
     for (( i=0; i<${repetitions}; i++)) # repetitions
     do
@@ -13,7 +13,7 @@ do
 	do
 	    for numIter in  100 1000 5000 10000 #iterate over numIter
 	    do
-	        CILK_NWORKERS=4 ./kmeans_cpu images/${n}.ppm ${k} ${numIter}
+	        CILK_NWORKERS=4 ./kmeans_cpu ../images/${n}.ppm ${k} ${numIter}
 	    done
 	done
     done

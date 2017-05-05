@@ -13,7 +13,7 @@ do
 	do
 	    for numIter in  100 1000 5000 10000 #iterate over numIter
 	    do
-	        ./kmeans_gpu ${n}.ppm ${k} ${numIter}
+	        ./kmeans_gpu ../images/${n}.ppm ${k} ${numIter}
 	    done
 	done
     done
