@@ -67,6 +67,36 @@ __global__ void calculateCentroids(uchar *d_clustersR, uchar *d_clustersG, uchar
 	}
 }
 
+void error(char *message){
+  fprintf(stderr, "Error: %s\n", message);
+  exit(1);
+}
+void readPPMHeader(FILE *fp, int *width, int *height){
+  char ch;
+  int  maxval;
+
+  if (fscanf(fp, "P%c\n", &ch) != 1 || ch != '6')
+    error("file is not in ppm raw format (P6)");
+
+  /* skip comments */
+  ch = getc(fp);
+  while (ch == '#'){
+      do {
+	ch = getc(fp);
+      } while (ch != '\n');	/* read to the end of the line */
+      ch = getc(fp);            
+    }
+
+  if (!isdigit(ch)) error("cannot read header information from ppm file");
+
+  ungetc(ch, fp);		/* put that digit back */
+
+  /* read the width, height, and maximum value for a pixel */
+  fscanf(fp, "%d%d%d\n", width, height, &maxval);
+
+  if (maxval != 255) error("image is not true-color (24 bit); read failed");
+}
+
 void uploadImage(uchar *image, int size, uchar *imageR, uchar *imageG, uchar *imageB){
 	for (int i=0; i<size; i+=3){
 		int index = (int)i/3;
@@ -100,7 +130,7 @@ int main(int argc, char *argv[]) {
 	imageG = (uchar*)malloc(imageSize);
 	imageB = (uchar*)malloc(imageSize);
 
-	uploadImage(image, imageR, imageG, imageB);
+	uploadImage(image, pixelCount*3, imageR, imageG, imageB);
 	free(image);
 
 	clustersR = (uchar*)calloc(sizeof(uchar), k);
