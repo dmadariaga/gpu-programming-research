@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <ctype.h>
 
 #define BLOCK_SIZE 16
 #define GRID_SIZE 256
@@ -67,7 +68,7 @@ __global__ void calculateCentroids(uchar *d_clustersR, uchar *d_clustersG, uchar
 	}
 }
 
-void error(char *message){
+void error(char const *message){
   fprintf(stderr, "Error: %s\n", message);
   exit(1);
 }
