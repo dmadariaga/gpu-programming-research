@@ -131,14 +131,15 @@ int main(int argc, char *argv[]) {
 	char* inputFile = argv[1];
 	int k = atoi(argv[2]);
 	int numIter = atoi(argv[3]);
-	char* outputFile = argv[4];
+	char* outputFile;
+	if (argc ==5)
+		outputFile = argv[4];
 
 	int width, height;
 
 	FILE  *fp    = fopen(inputFile, "r");
 	readPPMHeader(fp, &width, &height);
 	int pixelCount = width*height;
-	printf("Image info: width: %d - height:%d\n", width, height);
 	uchar *image = (uchar*)malloc(pixelCount*3);
 	fread(image, 1, pixelCount*3, fp);
 	fclose(fp);
@@ -229,7 +230,7 @@ int main(int argc, char *argv[]) {
   	}
   
   	t = (etime.tv_sec - stime.tv_sec) + (etime.tv_nsec - stime.tv_nsec) / 1000000000.0;
-  	printf("threads: %d, elapsed time: %lf\n", __cilkrts_get_nworkers(), t);
+  	printf("%d,%d,%d,%lf\n", pixelCount, k, numIter, t);
 
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
 	cudaMemcpy(clusterSize, d_clusterSize, centroidsSize, cudaMemcpyDeviceToHost);
@@ -248,8 +249,8 @@ int main(int argc, char *argv[]) {
 		imageG[i] = clusterG[cluster];
 		imageB[i] = clusterB[cluster];
 	}
-
-	writePPMImage(imageR, imageG, imageB, width, height, outputFile);
+	if (argc == 5)
+		writePPMImage(imageR, imageG, imageB, width, height, outputFile);
 	
 	free(imageR);
 	free(imageG);
