@@ -10,7 +10,7 @@ do
     do
 	for k in 3 5 10 20 # iterate over k
 	do
-	    for numIter in  100 1000 5000 #iterate over numIter
+	    for numIter in  100 1000 5000 10000 #iterate over numIter
 	    do
 	        CILK_NWORKERS=4 ./template ${n}.ppm ${k} ${numIter}
 	    done
