@@ -210,10 +210,10 @@ int main(int argc, char *argv[]) {
 	for (int i=0; i<numIter; i++){
 		assignClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
 								d_clusterR, d_clusterG, d_clusterB);
-		clearClusterInfo<<< 1, k >>> (d_sumR, d_sumG, d_sumB, d_clusterSize);		
+		clearClusterInfo<<< 1, 5 >>> (d_sumR, d_sumG, d_sumB, d_clusterSize);		
 		sumClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
 								d_sumR, d_sumG, d_sumB, d_clusterSize);
-		calculateCentroids<<< 1, k >>> (d_clusterR, d_clusterG, d_clusterB,
+		calculateCentroids<<< 1, 5 >>> (d_clusterR, d_clusterG, d_clusterB,
 								d_sumR, d_sumG, d_sumB, d_clusterSize);
 	}
 	int *clusterSize = (int*)malloc(sizeof(int)*k);
