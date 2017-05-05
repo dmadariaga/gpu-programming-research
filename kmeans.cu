@@ -109,17 +109,19 @@ void uploadImage(uchar *image, int size, uchar *imageR, uchar *imageG, uchar *im
 }
 
 int main(int argc, char *argv[]) {
+	char* inputFile = argv[1];
+	int k = atoi(argv[2]);
+	int numIter = atoi(argv[3]);
+
 	int width, height;
 
-	FILE  *fp    = fopen(argv[1], "r");
+	FILE  *fp    = fopen(inputFile, "r");
 	readPPMHeader(fp, &width, &height);
 	int pixelCount = width*height;
 	printf("Image info: width: %d - height:%d\n", width, height);
 	uchar *image = (uchar*)malloc(pixelCount*3);
 	fread(image, 1, pixelCount*3, fp);
 	fclose(fp);
-
-	int k = atoi(argv[2]);
 
 	uchar *imageR, *imageG, *imageB, *clustersR, *clustersG, *clustersB;
 	uchar *d_imageR, *d_imageG, *d_imageB, *d_clustersR, *d_clustersG, *d_clustersB;
@@ -184,7 +186,7 @@ int main(int argc, char *argv[]) {
 	//Each dimension is fixed
 	dim3 dimBLOCK(BLOCK_SIZE,BLOCK_SIZE);
 
-	for (int i=0; i<1000; i++){
+	for (int i=0; i<numIter; i++){
 		assignClusters<<< dimGRID, dimBLOCK >>> (d_imageR, d_imageG, d_imageB, d_assignedClusters,
 								d_clustersR, d_clustersG, d_clustersB);
 		clearClusterInfo<<< 1, k >>> (d_sumR, d_sumG, d_sumB, d_clusterSize);		
