@@ -100,7 +100,6 @@ void readPPMHeader(FILE *fp, int *width, int *height){
 }
 
 void writePPMImage(uchar *imageR, uchar *imageG, uchar *imageB, int width, int height, char const *filename){
-	int num;
     int pixelCount = width*height;
 
     FILE *fp = fopen(filename, "w");
@@ -109,11 +108,10 @@ void writePPMImage(uchar *imageR, uchar *imageG, uchar *imageB, int width, int h
 
     fprintf(fp, "P6\n%d %d\n%d\n", width, height, 255);
 
-    num = fwrite((void *) image->data, 1, (size_t) size, fp);
     for (int i=0; i<pixelCount; i++){
-    	fwrite(imageR[i], sizeof(uchar), 1, fp);
-    	fwrite(imageG[i], sizeof(uchar), 1, fp);
-    	fwrite(imageB[i], sizeof(uchar), 1, fp);
+    	fwrite((void *)imageR[i], sizeof(uchar), 1, fp);
+    	fwrite((void *)imageG[i], sizeof(uchar), 1, fp);
+    	fwrite((void *)imageB[i], sizeof(uchar), 1, fp);
   	}
 
     fclose(fp);
