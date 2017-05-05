@@ -12,7 +12,7 @@ do
 	do
 	    for numIter in  100 1000 5000 #iterate over numIter
 	    do
-	        CILK_NWORKERS=4 ./a.out ${n}.ppm ${k} ${numIter}
+	        CILK_NWORKERS=4 ./template ${n}.ppm ${k} ${numIter}
 	    done
 	done
     done
