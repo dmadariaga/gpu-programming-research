@@ -1,4 +1,7 @@
 # K-Means Image Segmentation in CUDA
+![](http://users.dcc.uchile.cl/~dmadaria/images/1600.png "Description goes here")
+![](http://users.dcc.uchile.cl/~dmadaria/images/1.png "Description goes here")
+ <br />K-Means example (K=3, Iterations=1000)
 
 ## Requirements:
 - Install [NVIDIA CUDA Toolkit](docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html)
